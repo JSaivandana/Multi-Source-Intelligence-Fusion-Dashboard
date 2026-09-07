@@ -1,0 +1,54 @@
+
+
+services:
+  # =========================================================
+  # Problem 1: Intelligence Fusion Dashboard
+  # =========================================================
+  p1_mongodb:
+    image: mongo:latest
+    container_name: p1_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - p1_mongo_data:/data/db
+    networks:
+      - fusion_net
+
+  p1_backend:
+    build:
+      context: ./problem_1_intelligence_fusion/backend
+      dockerfile: Dockerfile
+    container_name: p1_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URL=mongodb://p1_mongodb:27017
+      - DB_NAME=intelligence_fusion
+    depends_on:
+      - p1_mongodb
+    volumes:
+      - ./problem_1_intelligence_fusion/backend:/app
+    networks:
+      - fusion_net
+
+  p1_frontend:
+    build:
+      context: ./problem_1_intelligence_fusion/frontend
+      dockerfile: Dockerfile
+    container_name: p1_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./problem_1_intelligence_fusion/frontend:/app
+      - /app/node_modules
+    depends_on:
+      - p1_backend
+    networks:
+      - fusion_net
+
+volumes:
+  p1_mongo_data:
+
+networks:
+  fusion_net:
+    driver: bridge

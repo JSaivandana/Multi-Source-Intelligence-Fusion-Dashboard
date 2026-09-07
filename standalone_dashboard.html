@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Fusion Dashboard</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <style>
+        :root {
+            --primary: #2563eb;
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        * { box-sizing: border-box; }
+
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .sidebar {
+            width: 320px;
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            z-index: 1000;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+        }
+
+        .map-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+            background-color: #0f172a;
+        }
+
+        .header {
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0;
+            color: #60a5fa;
+            letter-spacing: 0.5px;
+        }
+
+        .control-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn:hover { background-color: #3b82f6; transform: translateY(-1px); }
+        .btn-secondary { background-color: #334155; }
+        .btn-secondary:hover { background-color: #475569; }
+
+        .stats-box {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-weight: 600;
+        }
+        
+        .tag.osint { background-color: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .tag.imint { background-color: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .tag.humint { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
+
+        /* Custom Popup Styling */
+        .leaflet-popup-content-wrapper {
+            background-color: var(--surface);
+            color: var(--text);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .leaflet-popup-tip { background-color: var(--surface); }
+        .leaflet-popup-content h3 { margin: 0 0 5px 0; color: #60a5fa; }
+        .leaflet-popup-content p { margin: 5px 0 0 0; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="header">
+                <h1>Intelligence Fusion</h1>
+                <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: var(--text-muted)">Command Center Prototype</p>
+            </div>
+            
+            <div class="control-panel">
+                <button class="btn" onclick="alert('In a full setup, this would fetch live OSINT from the FastAPI backend!')">
+                    📡 Fetch OSINT Data
+                </button>
+                <button class="btn btn-secondary" onclick="alert('Upload functionality requires the backend to be running.')">
+                    📁 Upload CSV/JSON
+                </button>
+                <button class="btn btn-secondary" onclick="alert('Imagery processing requires the backend to be running.')">
+                    🛰️ Upload Imagery
+                </button>
+            </div>
+
+            <div class="stats-box">
+                <h3 style="font-size: 0.9rem; margin-top: 0; color: #cbd5e1;">Active Intelligence Nodes: <span id="node-count">2</span></h3>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;">
+                    <span class="tag osint">OSINT</span>
+                    <span class="tag imint">IMINT</span>
+                    <span class="tag humint">HUMINT</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        // Initialize the map
+        const map = L.map('map', {
+            zoomControl: false // Move to bottom right later
+        }).setView([51.505, -0.09], 13);
+        
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        // Add dark theme map tiles (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Mock Data
+        const intelligenceData = [
+            { lat: 51.505, lng: -0.09, source: 'OSINT', title: 'Target Alpha', desc: 'Activity detected on social media networks.' },
+            { lat: 51.512, lng: -0.10, source: 'IMINT', title: 'Facility Beta', desc: 'Satellite imagery shows new structural developments.' },
+            { lat: 51.498, lng: -0.08, source: 'HUMINT', title: 'Rendezvous Point', desc: 'Field operative reported suspicious gathering.' }
+        ];
+
+        document.getElementById('node-count').innerText = intelligenceData.length;
+
+        // Custom Marker Colors based on Source
+        function getMarkerColor(source) {
+            if(source === 'OSINT') return '#3b82f6';
+            if(source === 'IMINT') return '#22c55e';
+            if(source === 'HUMINT') return '#a855f7';
+            return '#64748b';
+        }
+
+        // Add markers to map
+        intelligenceData.forEach(point => {
+            const color = getMarkerColor(point.source);
+            
+            // Create a custom SVG marker
+            const svgIcon = L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div style="background-color:${color}; width:16px; height:16px; border-radius:50%; border:2px solid white; box-shadow: 0 0 10px ${color}"></div>`,
+                iconSize: [16, 16],
+                iconAnchor: [8, 8]
+            });
+
+            const marker = L.marker([point.lat, point.lng], {icon: svgIcon}).addTo(map);
+            
+            const popupContent = `
+                <div>
+                    <h3>${point.title}</h3>
+                    <span class="tag ${point.source.toLowerCase()}" style="display:inline-block; margin-bottom:8px;">${point.source}</span>
+                    <p>${point.desc}</p>
+                </div>
+            `;
+            
+            marker.bindPopup(popupContent);
+        });
+    </script>
+</body>
+</html>
