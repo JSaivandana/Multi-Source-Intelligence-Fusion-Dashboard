@@ -1,4 +1,4 @@
-# Problem 1: Multi-Source Intelligence Fusion Dashboard
+# Multi-Source Intelligence Fusion Dashboard
 
 ## 📌 Problem Statement
 
@@ -51,7 +51,7 @@ docker run -d -p 27017:27017 --name intel-mongo mongo:latest
 
 ### 2. Start the Backend
 ```bash
-cd problem_1_intelligence_fusion/backend
+cd multi source intelligence fusion dashboard/backend
 pip install -r requirements.txt
 python main.py
 ```
@@ -59,7 +59,7 @@ Backend runs at `http://localhost:8000` (docs at `/docs`).
 
 ### 3. Start the Frontend
 ```bash
-cd problem_1_intelligence_fusion/frontend
+cd multi source intelligence fusion dashboard/frontend
 npm install
 npm run dev
 ```
@@ -67,7 +67,7 @@ Frontend runs at `http://localhost:3000`.
 
 ### 🐳 Or with Docker Compose
 ```bash
-docker-compose up p1_mongodb p1_backend p1_frontend
+docker-compose up multi source intelligence fusion dashboard_mongodb multi source intelligence fusion dashboard_backend multi source intelligence fusion dashboard_frontend
 ```
 
 ## 🖱️ Using the Dashboard
